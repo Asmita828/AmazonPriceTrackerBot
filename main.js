@@ -1,22 +1,27 @@
 const Telegraph = require('telegraf');
-const bot = new Telegraph('5661441497:AAGgnAe6_LvpY0CnFOpUats-Z6BEOPFt8jU');
+const bot = new Telegraph('5661441497:AAGgnAe6_LvpY0CnFOpUats-Z6BEOPFt8jU', { polling: true });
 const lib = require("./index");
 
 const mongoose = require('mongoose');
-mongoose.connect('mongodb://127.0.0.1:27017/amazonTracker',{ useNewUrlParser:true, useUnifiedTopology: true})
-    .then(()=>{
+mongoose.connect('mongodb://127.0.0.1:27017/amazonTracker', { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => {
         console.log("CONNECTION OPEN!!")
     })
-    .catch(err=>{
+    .catch(err => {
         console.log("OH NO ERROR!!!!")
         console.log(err);
     })
 
-const requestSchema= new mongoose.Schema({
-    username:String,
-    urls:[String]
+const requestSchema = new mongoose.Schema({
+    username: String,
+    products: [
+        {
+            url: String,
+            price: Number
+        }
+    ]
 })
-const Request=mongoose.model('Request',requestSchema);
+const Request = mongoose.model('Request', requestSchema);
 const isValidUrl = urlString => {
     var urlPattern = new RegExp('^(https?:\\/\\/)?' + // validate protocol
         '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // validate domain name
@@ -27,114 +32,127 @@ const isValidUrl = urlString => {
     return !!urlPattern.test(urlString);
 }
 
-const startMess ="Hello! I am like your personal Amazon price tracker assistant.I will help you save money in your shopping!!You can send me link of Any Product available on Amazon and I will Track it's Price for you. I will make sure to send you an alert when the Price of that product drops!!"
+const startMess = "Hello! I am like your personal Amazon price tracker assistant.You can send me link of Any Product available on Amazon and I will Track it's Price for you. I will make sure to send you an alert when the Price of that product drops!!"
 bot.start((ctx) => {
     ctx.reply(startMess);
-    //user = ctx.from.id;
 });
 
-const USERS=[]
 const PRODUCTS = [];
 
-bot.use((ctx) => {
+
+bot.use((ctx)=>{
     const user = ctx.from.id;
-    if (ctx.updateSubTypes[0]=== "text")
-    {
-        ctx.reply("This is a text");
-        const input=ctx.message.text;
-        const inputArray=input.split(" ");
-        inputArray.forEach(input => 
-        {
-            if(isValidUrl(input))
-            {
-                //console.log("*");
-                //console.log(ctx.from.id)
-
-                Request.find({ username: user, urls: { "$in": [input] } }, function (err, data) {
-                    if (err) {
-                        console.log(err);
-                    }
-                    else
-                    {
-                        if(data)
-                        {
-                            ctx.reply("I am already tracking this product");
-                            console.log(data);
-                        }
-                        else
-                        {
-                            Request.exists({ username: user }, function (err, doc) {
-                                if (err) {
-                                    console.log(err)
-                                } else {
-                                    if (doc) {
-                                        Request.updateOne(
-                                            { username: user },
-                                            { "$push": { "urls": input } },
-                                            function (err, result) {
-                                                if (err) {
-                                                    console.log(err);
-                                                } else {
-                                                    console.log(result);
-                                                }
-                                            }
-                                        )
-                                    }
-                                    else {
-                                        const dbEntry = new Request({
-                                            username: user,
-                                            urls: [input]
-                                        })
-                                        dbEntry.save()
-                                            .then((dbEntry) =>
-                                                console.log(dbEntry)
-                                            )
-                                            .catch((err) => {
-                                                console.log(err);
-                                                console.log("can't save info")
-                                            })
-                                    }
-                                }
-                            })
-                        }
-                    }
-
-                });
+    const input = ctx.message.text;
+    const inputArray = input.split(" ");
+    let Flag = 0
+    inputArray.forEach(async input=>{
+        if(isValidUrl(input)) {
+            const gotPrice = await lib.FetchPrice(input);
+            if(gotPrice == -1) {
+                ctx.reply("This is not a valid url")
+                return 
             }
-            else
-            {
-                ctx.reply("Sorry! I don't understand");
+
+            // console.log(ctx.message);
+            // bot.send_message(chat_id = ctx.message.chat.id, text = "<a href='https://www.google.com/'>Google</a>", parse_mode = Telegraph.Markup)
+
+            Flag = 1
+            const userData = await Request.findOne({ username: user })
+            if(userData) {
+                let flag = 0
+                userData.products.forEach(product=>{
+                    if(product.url == input) {
+                        flag = 1
+                    }
+                })
+                if(flag == 1) {
+                    ctx.reply("I am already tracking this product");
+                }
+                else {
+                    await Request.updateOne(
+                        { username: user },
+                        { "$push": { "products": { url: input, price: gotPrice } } }
+                    )
+                    PRODUCTS.push({
+                        username : user,
+                        url : input,
+                        price : gotPrice
+                    })
+                }
             }
-        });
-        //console.log();  
-    }
-    else
-    {
-        ctx.reply("Sorry! I don't understand");
+            else{
+                const dbEntry = new Request({
+                    username: user,
+                    products: [{ url: input, price: gotPrice }]
+                    //urls: [input]
+                })
+                await dbEntry.save();
+                PRODUCTS.push({
+                    username: user,
+                    url: input,
+                    price: gotPrice
+                })
+            }
+        }
+    })
+    if(Flag = 0) {
+        ctx.reply("We haven't got any valid URL")
     }
 })
 
-bot.launch()
-    .then(()=>{
-        Request.find({}, function (err, users) {
-            //console.log(users);
-            users.forEach(function (user) {
-               const urls=user.urls;
-               urls.forEach(url=>{
-                if(PRODUCTS.includes(url)==false)
+const notify=(price,username)=>{
+    console.log("congooooooooooooooooooo");
+}
+
+const Track=async ()=>{
+    PRODUCTS.map(async (prod) => {
+        const newPrice = await lib.FetchPrice(prod.url);
+        if(newPrice<prod.price)
+        {
+            prod.price=newPrice;
+
+            //updating new price in db
+            const data = await Request.findOne({ username:prod.username })
+            const products=data.products;
+            products.forEach(product=>{
+                if(product.url==prod.url)
                 {
-                    PRODUCTS.push(url);
+                    product.price=newPrice;
                 }
-               })
-            });
-            
+            })
+            await products.save();
+
+            if (userData) {
+                let flag = 0
+                userData.products.forEach(product => {
+                    if (product.url == input) {
+                        flag = 1
+                    }
+                })
+                if (flag == 1) {
+                    ctx.reply("I am already tracking this product");
+                }
+
+            notify(newPrice,prod.username);
+        }
+    }});
+    setTimeout(Track, 300000);
+}
+
+bot.launch()
+    .then(async ()=>{
+        let users = await Request.find();
+        users.forEach((user)=>{
+            user.products.forEach((product)=>{
+                let obj={};
+                obj.username=user.username;
+                obj.url=product.url;
+                obj.price=product.price;
+                PRODUCTS.push(obj);
+            })
         })
-        // PRODUCTS.forEach(product=>{
-        //     lib.FetchPrice(product);
-        // })
-        // setTimeout(Track, 300);
+        Track()
     })
-    .catch((err)=>{
-        console.log("OOPS!!");
-    })
+    
+   
 
