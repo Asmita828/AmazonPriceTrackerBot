@@ -51,14 +51,15 @@ bot.use(async (ctx)=>{
         if(isValidUrl(input)) {
             const gotPrice = await lib.FetchPrice(input);
             if(gotPrice == -1) {
-                //console.log("moti3")
-                //ctx.reply("This is not a valid url")
-               // return
                continue
             }
             Flag=1;
             console.log(ctx.message);
-            ctx.reply("Got a valid URL!")
+            const msg = `Got a valid URL!Now Fetching Price\n&#128519;Please wait....` 
+            bot.telegram.sendMessage(ctx.from.id, msg, {
+                parse_mode: "html"
+            })
+            //ctx.reply("Got a valid URL!Now Fetching Price\n	&#128519;Please wait....")
             
             const userData = await Request.findOne({ username: user })
             if(userData) {
@@ -69,9 +70,13 @@ bot.use(async (ctx)=>{
                     }
                 })
                 if(flag == 1) {
-                    ctx.reply("I am already tracking this product");
+                    const x = `&#128526;I am already tracking price of this product \n` + input + `\n<b>Current price :Rs ${gotPrice}</b>\n<i>I will send you alert when the price of this product drops!!&#128521;</i>`
+                    bot.telegram.sendMessage(ctx.from.id, x, {
+                        parse_mode: "html"
+                    })
+                    //ctx.reply("I am already tracking this product");
                 }
-                else {
+                else {//got a new product for an existing user
                     await Request.updateOne(
                         { username: user },
                         { "$push": { "products": { url: input, price: gotPrice } } }
@@ -80,6 +85,10 @@ bot.use(async (ctx)=>{
                         username : user,
                         url : input,
                         price : gotPrice
+                    })
+                    const x = `Yayy! <b>Product found</b>&#128512; \n` + input + `\n<b>Current price :Rs ${gotPrice}</b>\n<i>I have started tracking price of this product.I will send you alert when the price of this product drops!!&#128521;</i>`
+                    bot.telegram.sendMessage(ctx.from.id, x, {
+                        parse_mode: "html"
                     })
                 }
             }
@@ -94,6 +103,10 @@ bot.use(async (ctx)=>{
                     username: user,
                     url: input,
                     price: gotPrice
+                })
+                const x = `Yayy! <b>Product found</b>&#128512; \n` + input + `\n<b>Current price :Rs ${gotPrice}</b>\n<i>I have started tracking price of this product.I will send you alert when the price of this product drops!!&#128521;</i>`
+                bot.telegram.sendMessage(ctx.from.id, x, {
+                    parse_mode: "html"
                 })
             }
         }
