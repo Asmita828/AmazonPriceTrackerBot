@@ -14,11 +14,9 @@ async function FetchPrice(productUrl){
             //console.log("**");
             const $ = cheerio.load(data);
             let gotThePrice = $(".a-price-whole").text();
-            const price=gotThePrice.split(".")[0].match(/\d+/g).join("");
-            console.log(price);
-            if (price) 
+            if(gotThePrice)
             {
-                console.log("*");
+                const price = gotThePrice.split(".")[0].match(/\d+/g).join("");
                 console.log(price);
                 return price;
             }
@@ -26,9 +24,7 @@ async function FetchPrice(productUrl){
             {
                 return -1;
             }
-            
         });
-       
 };
 
 module.exports = {FetchPrice };

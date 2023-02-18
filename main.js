@@ -1,4 +1,5 @@
 const Telegraph = require('telegraf');
+// Telegraph.Markup
 const bot = new Telegraph('5661441497:AAGgnAe6_LvpY0CnFOpUats-Z6BEOPFt8jU', { polling: true });
 const lib = require("./index");
 
@@ -39,24 +40,26 @@ bot.start((ctx) => {
 
 const PRODUCTS = [];
 
-
-bot.use((ctx)=>{
+bot.use(async (ctx)=>{
     const user = ctx.from.id;
-    const input = ctx.message.text;
-    const inputArray = input.split(" ");
-    let Flag = 0
-    inputArray.forEach(async input=>{
+    const inputFromUser = ctx.message.text;
+    const inputArray = inputFromUser.split(" ");
+    var Flag =0;
+    console.log(inputArray);
+    for(let  index in inputArray){
+        const input=inputArray[index];
         if(isValidUrl(input)) {
             const gotPrice = await lib.FetchPrice(input);
             if(gotPrice == -1) {
-                ctx.reply("This is not a valid url")
-                return 
+                //console.log("moti3")
+                //ctx.reply("This is not a valid url")
+               // return
+               continue
             }
-
-            // console.log(ctx.message);
-            // bot.send_message(chat_id = ctx.message.chat.id, text = "<a href='https://www.google.com/'>Google</a>", parse_mode = Telegraph.Markup)
-
-            Flag = 1
+            Flag=1;
+            console.log(ctx.message);
+            ctx.reply("Got a valid URL!")
+            
             const userData = await Request.findOne({ username: user })
             if(userData) {
                 let flag = 0
@@ -94,8 +97,8 @@ bot.use((ctx)=>{
                 })
             }
         }
-    })
-    if(Flag = 0) {
+    }
+    if(Flag === 0) {
         ctx.reply("We haven't got any valid URL")
     }
 })
@@ -120,22 +123,10 @@ const Track=async ()=>{
                     product.price=newPrice;
                 }
             })
-            await products.save();
-
-            if (userData) {
-                let flag = 0
-                userData.products.forEach(product => {
-                    if (product.url == input) {
-                        flag = 1
-                    }
-                })
-                if (flag == 1) {
-                    ctx.reply("I am already tracking this product");
-                }
-
+            await data.save();
             notify(newPrice,prod.username);
         }
-    }});
+    });
     setTimeout(Track, 300000);
 }
 
