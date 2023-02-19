@@ -39,7 +39,37 @@ bot.start((ctx) => {
 });
 
 const PRODUCTS = [];
+const regex = new RegExp('untrack_[0-9]*[a-z]*')
+bot.hears(regex,async(ctx)=>{
+    ctx.reply("Hiiiiiiii")
+    console.log(ctx.match.input.slice(9,))
+    const productId = ctx.match.input.slice(9,);
+    const user = ctx.from.id;
+    const userData = await Request.findOne({ username: user })
+    userData.products=userData.products.filter((product)=>{
+        if(product._id!=productId)
+        {
+            return product
+        }
+    })
+    await userData.save();
+    // console.log(updatedData)
+    ctx.reply("Successfully untracked the product")
 
+})
+bot.command('list',async(ctx)=>{
+    let i=1
+    const user = ctx.from.id;
+    let msg =`Here the list I am tracking for you!`
+    const userData = await Request.findOne({ username: user })
+    userData.products.forEach(product=>{
+        msg +=`\n&#128073;${i}. ${product.url}\n To untrack click: /untrack_${product._id}\n\n`
+        i++
+    })
+    bot.telegram.sendMessage(ctx.from.id, msg, {
+        parse_mode: "html"
+    })
+})
 bot.use(async (ctx)=>{
     const user = ctx.from.id;
     const inputFromUser = ctx.message.text;
@@ -108,6 +138,11 @@ bot.use(async (ctx)=>{
                 bot.telegram.sendMessage(ctx.from.id, x, {
                     parse_mode: "html"
                 })
+                const y=`To get list of all products that i am tracking for you,Click /list`
+                bot.telegram.sendMessage(ctx.from.id, y, {
+                    parse_mode: "html"
+                })
+
             }
         }
     }
