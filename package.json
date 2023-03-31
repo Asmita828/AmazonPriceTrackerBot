@@ -4,17 +4,22 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "node main.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "netlify-lambda serve src",
+    "build": "netlify-lambda build src",
+    "start:lambda": "netlify-lambda serve src/main.js",
+    "test": "echo \"Error: no test specified\" && exit 1" 
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.2.2",
+    "axios": "^1.2.2", 
     "cheerio": "^1.0.0-rc.12",
+    "expresss": "^0.0.0",
     "mongoose": "^6.8.2",
+    "netlify-lambda": "^2.0.16",
     "nodemon": "^2.0.20",
     "ora": "^6.1.2",
+    "serverless-http": "^3.2.0",
     "telegraf": "3.32"
   }
 }
