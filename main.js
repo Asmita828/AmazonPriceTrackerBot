@@ -4,7 +4,7 @@ const bot = new Telegraph('5661441497:AAGgnAe6_LvpY0CnFOpUats-Z6BEOPFt8jU', { po
 const lib = require("./index");
 
 const mongoose = require('mongoose');
-mongoose.connect('mongodb://127.0.0.1:27017/amazonTracker', { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect('mongodb+srv://asmita:asmita@cluster0.3clvb.mongodb.net/bot?retryWrites=true&w=majority', { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => {
         console.log("CONNECTION OPEN!!")
     })
