@@ -2,6 +2,12 @@ const Telegraph = require('telegraf');
 // Telegraph.Markup
 const bot = new Telegraph('5661441497:AAGgnAe6_LvpY0CnFOpUats-Z6BEOPFt8jU', { polling: true });
 const lib = require("./index");
+const express = require("express");
+
+const app = express();
+app.listen(3000, () => {
+    console.log('Connection created!!')
+});
 
 const mongoose = require('mongoose');
 mongoose.connect('mongodb+srv://asmita:asmita@cluster0.3clvb.mongodb.net/bot?retryWrites=true&w=majority', { useNewUrlParser: true, useUnifiedTopology: true })
