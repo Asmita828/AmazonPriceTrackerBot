@@ -3,11 +3,14 @@ const Telegraph = require('telegraf');
 const bot = new Telegraph('5661441497:AAGgnAe6_LvpY0CnFOpUats-Z6BEOPFt8jU', { polling: true });
 const lib = require("./index");
 const express = require("express");
-
 const app = express();
+
 app.listen(3000, () => {
     console.log('Connection created!!')
 });
+app.get('/', (req, res) => {
+    res.send("GET Request Called")
+})
 
 const mongoose = require('mongoose');
 mongoose.connect('mongodb+srv://asmita:asmita@cluster0.3clvb.mongodb.net/bot?retryWrites=true&w=majority', { useNewUrlParser: true, useUnifiedTopology: true })
@@ -39,15 +42,14 @@ const isValidUrl = urlString => {
     return !!urlPattern.test(urlString);
 }
 
-const startMess = "Hello! I am like your personal Amazon price tracker assistant.You can send me link of Any Product available on Amazon and I will Track it's Price for you. I will make sure to send you an alert when the Price of that product drops!!"
+const startMess = "Hello! I am like your personal Amazon price tracker assistant!&#128512;\n\nYou can send me link of Any Product available on Amazon and I will Track it's Price for you&#10004;\n\n I will make sure to send you an alert when the Price of that product drops&#9996;!!"
 bot.start((ctx) => {
-    ctx.reply(startMess);
+    ctx.replyWithHTML(startMess);
 });
 
 const PRODUCTS = [];
 const regex = new RegExp('untrack_[0-9]*[a-z]*')
 bot.hears(regex,async(ctx)=>{
-    ctx.reply("Hiiiiiiii")
     console.log(ctx.match.input.slice(9,))
     const productId = ctx.match.input.slice(9,);
     const user = ctx.from.id;
@@ -66,12 +68,20 @@ bot.hears(regex,async(ctx)=>{
 bot.command('list',async(ctx)=>{
     let i=1
     const user = ctx.from.id;
-    let msg =`Here the list I am tracking for you!`
+    let msg =``;
     const userData = await Request.findOne({ username: user })
-    userData.products.forEach(product=>{
-        msg +=`\n&#128073;${i}. ${product.url}\n To untrack click: /untrack_${product._id}\n\n`
-        i++
-    })
+    if(userData.products.length==0)
+    {
+        msg +=`Your list is empty!!\nCurrently, I am not tracking price of any product&#128220\n\nYou can send me link of any product of Amazon.I will make sure to send you an alert when the price of that product drops&#128519;`
+    }
+    else
+    {
+        msg += `Here the list I am tracking for you!`
+        userData.products.forEach(product => {
+            msg += `\n&#128073;${i}. ${product.url}\n To untrack click: /untrack_${product._id}\n\n`
+            i++
+        })
+    }
     bot.telegram.sendMessage(ctx.from.id, msg, {
         parse_mode: "html"
     })
